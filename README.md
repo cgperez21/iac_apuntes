@@ -167,3 +167,5 @@ resource "aws_instance" "ec2_prueba" {
   }
 }
 ```
+
+$env:TF_LOG = "DEBUG" $env:TF_LOG_PATH = "catalina-perez.log"
