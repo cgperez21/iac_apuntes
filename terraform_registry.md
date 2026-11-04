@@ -14,35 +14,47 @@ terraform {
   }
 }
 provider "aws" {
-  region = "us-east-1"
+  region = "us-east-1" ***
 }
 ```
+## Random https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string
+```` hcl
+resource "random_string" "random" {
+  length           = 16
+  special          = false
+  upper            = false  
+}
+````
 ## vpc provider https://registry.terraform.io/providers/hashicorp/aws/latest/docs https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/availability_zones
 ````hcl
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+resource "aws_vpc" "**main**" {
+  cidr_block = "10.0.0.0/16" ***
+  tags = {
+    Name = local.nombre
 }
-data "aws_availability_zones" "available" {
+}
+
+data "aws_availability_zones" "**available**" {
   state = "available"
 }
 ```````
 ## subnet provider https://registry.terraform.io/providers/-/aws/latest/docs/resources/subnet
 ```` hcl
-resource "aws_subnet" "main" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.1.0/24"
+resource "aws_subnet" "**main**" {
+  vpc_id     = aws_vpc.**main**.id
+  cidr_block = "10.0.1.0/24" *****
   map_public_ip_on_launch = true
-  availability_zone       = data.aws_availability_zones.available.names[0]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   tags = {
-    Name = "Main"
+    Name = "Main" *****
   }
 ````
 ## IGW https://registry.terraform.io/providers/-/aws/latest/docs/resources/internet_gateway
 ```` hcl
 resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.**main**.id
   tags = {
-    Name = "main"
+    Name = "main" ***
   }
 }
 ````
@@ -77,7 +89,7 @@ resource "aws_security_group" "allow_tls" {
     from_port        = 443
     to_port          = 443
     protocol         = "tcp"
-    cidr_blocks      = [aws_vpc.main.cidr_block]
+    cidr_blocks      = ["0.0.0.0/0"]
   }
   egress {
     from_port        = 0
@@ -96,7 +108,6 @@ resource "aws_lb" "test" {
   name               = "test-lb-tf"
   internal           = false
   load_balancer_type = "network"
-  security_groups    = [aws_security_group.lb_sg.id]
   subnets            = [for subnet in aws_subnet.public : subnet.id]
   tags = {
     Environment = "production"
@@ -107,8 +118,8 @@ resource "aws_lb" "test" {
 ```` hcl
 resource "aws_lb_target_group" "test" {
   name     = "tf-example-lb-tg"
-  port     = 80
-  protocol = "HTTP"
+  port     = local.puerto
+  protocol = "TCP"
   vpc_id   = aws_vpc.main.id
 }
 ````
@@ -136,10 +147,6 @@ resource "aws_lb_target_group_attachment" "test" {
 ````hcl
 resource "aws_s3_bucket" "example" {
   bucket = "my-tf-test-bucket"
-  tags = {
-    Name        = "My bucket"
-    Environment = "Dev"
-  }
 }
 ````
 ## s3 privado https://registry.terraform.io/providers/-/aws/latest/docs/resources/s3_bucket_public_access_block
@@ -156,8 +163,12 @@ resource "aws_s3_bucket_public_access_block" "example" {
 ## EC2
 ```` hcl https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance
 resource "aws_instance" "example" {
-  ami           = "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  ami           = #****"
   instance_type = "t3.micro"
+  subnet_id              = ****
+  key_name               = *****
+  vpc_security_group_ids = ****
+
   tags = {
     Name = "HelloWorld"
   }
@@ -166,16 +177,13 @@ resource "aws_instance" "example" {
 ## local-exec https://developer.hashicorp.com/terraform/language/provisioners
 ```` hcl
   provisioner "local-exec" {
-    command = "echo The server's IP address is ${self.private_ip}"
+    command = "echo 'The server's IP address is ${self.id}'>>log.txt"
     interpreter = var.interprete_local
   }
 }
 ````
 ## remote-exec https://developer.hashicorp.com/terraform/language/provisioners
 ```` hcl
-resource "terraform_data" "cluster" {
-  triggers_replace = aws_instance.cluster[*].id
-
   connection {
     type     = "ssh"
     user     = "root"
