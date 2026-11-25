@@ -621,3 +621,16 @@ bucket = lower(format("%s-%s-%s", var.proyecto, var.aplicacion, var.ambiente))
 | `CIDR … is not within VPC` | Subred fuera del rango de la VPC | Corregir `cidr` |
 | Contraseña rechazada por RDS | Tiene `/`, `@`, `"` o espacio, o < 8 caracteres | Cambiarla |
 
+```` hcl
+Probar prod sin aplicar
+## terraform plan -var="ambiente=prod"
+
+Aplicar en dev
+## terraform apply dev.tfplan
+
+plan en dev
+## terraform plan -out=dev.tfplan
+````
+```` hcl
+$env:TF_LOG = "DEBUG" $env:TF_LOG_PATH = "catalina-perez.log"
+````
